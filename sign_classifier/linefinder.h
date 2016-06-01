@@ -139,7 +139,7 @@ class LineFinder {
 	  }
 
 	  // Decide based on the detected lines
-	  void decideOnLines(int width, int height)
+	  int decideOnLines(int width)
 	  {
 		  // Draw the lines
 		  std::vector<cv::Vec4i>::const_iterator it = lines.begin();
@@ -165,7 +165,16 @@ class LineFinder {
 			  ++it;	
 		  
 		  }
-		  std::cout << "min_x: " << min_x << ", max_x: " << max_x << "\n";
+
+		  //Do deciding here!
+		  if (max_x < width / 2) {
+		  	  return 1;
+		  } else if (min_x > width / 2) {
+		  	  return 2;
+		  } else if (min_x < width / 2 && max_x > width / 2) {
+		  	  return 3;
+		  }
+		  return 0;
 	  }
 
 	  // Eliminates lines that do not have an orientation equals to

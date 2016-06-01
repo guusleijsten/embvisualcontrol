@@ -59,7 +59,7 @@
 using namespace cv;
 using namespace std;
 
-int main(int argc, char* argv[]) {
+int trafficSignClassifier(cv::Mat image) {
 
     int houghVote = 200;
 
@@ -76,12 +76,12 @@ int main(int argc, char* argv[]) {
 */
     
     // Read the input image - convert char* to string
-    std::string input_filename(argv[1]);
+    //std::string input_filename(argv[1]);
     
     //if (input_filename == null_ptr)
       //  return 1;
     // Read the input image
-    cv::Mat image = cv::imread(input_filename);
+    //cv::Mat image = cv::imread(input_filename);
     
     // Check that the image has been opened
     if (! image.data) {
@@ -265,8 +265,8 @@ int main(int argc, char* argv[]) {
     ld.setShift(0);
     ld.drawDetectedLines(sImage);
 
-    ld.decideOnLines(sImage.cols, sImage.rows);
-
+    int ret = ld.decideOnLines(sImage.cols);
+    
     /*
     int i;
     for (i = 0; i < ld.numberLines(); i++) {
@@ -291,5 +291,5 @@ int main(int argc, char* argv[]) {
     */
     
     //cam.release();
-    return 0;
+    return ret;
 }
