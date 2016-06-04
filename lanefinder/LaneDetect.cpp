@@ -39,11 +39,9 @@
 #include "opencv2/highgui/highgui.hpp"
 #include <opencv2/objdetect/objdetect.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-/*
 #include <raspicam/raspicam_cv.h>
 #include <raspicam/raspicam.h>
 #include <raspicam/raspicamtypes.h>
- */
 #include <iostream>
 #include <vector>
 #include <stdio.h>
@@ -55,7 +53,7 @@
 #define KEY_SPACE 32
 #define KEY_ENTER 13
 
-//using namespace raspicam;
+using namespace raspicam;
 using namespace cv;
 using namespace std;
 
@@ -63,31 +61,31 @@ int main(int argc, char* argv[]) {
 
     int houghVote = 200;
 
-    //RaspiCam_Cv cam;
+    RaspiCam_Cv cam;
 
     //VideoCapture capture(arg);
 
     //if (!capture.isOpened()) //if this fails, try to open as a video camera, through the use of an integer param
     //    	{capture.open(atoi(arg.c_str()));}
-/*
+
     cam.set(CV_CAP_PROP_FORMAT, CV_8UC3);
     if (!cam.open())
-    return 1;
-*/
+      return 1;
+
     
     // Read the input image - convert char* to string
-    std::string input_filename(argv[1]);
+    //std::string input_filename(argv[1]);
     
     //if (input_filename == null_ptr)
       //  return 1;
     // Read the input image
-    cv::Mat image = cv::imread(input_filename);
+    //cv::Mat image = cv::imread(input_filename);
     
     // Check that the image has been opened
-    if (! image.data) {
+    /*if (! image.data) {
         std::cout << "Error to read the image. Check ''cv::imread'' function of OpenCV" << std::endl;
         return -1;
-    }
+    }*/
 /**
     int ex = static_cast<int>(cam.get(CV_CAP_PROP_FOURCC));
     double dWidth = cam.get(CV_CAP_PROP_FRAME_WIDTH); //get the width of frames of the video
@@ -104,12 +102,12 @@ int main(int argc, char* argv[]) {
 
     //if (!outputVideo.isOpened())
     //    return 1;
-
+    Mat image;
     //int n = 1;
-    //while (n > 0) {
+    while (1) {
 	//    n--;
-    //cam.grab();
-    //cam.retrieve(image);
+    cam.grab();
+    cam.retrieve(image);
     //TODO: fix raw video writer
     //outputVideo.write(image);
 
@@ -125,10 +123,10 @@ int main(int argc, char* argv[]) {
     //findDataMatrix(gray, codes, corners);
     //drawDataMatrixCodes(image, codes, corners);
 
-    Rect roi(0, sImage.cols / 3, sImage.cols - 1, sImage.rows - sImage.cols / 3); // set the ROI for the image
+    Rect roi(0, .7*sImage.rows, sImage.cols - 1, .3*sImage.rows-1); // set the ROI for the image
     Mat imgROI = sImage(roi);
     // Display the image
-    imwrite("../original.bmp", imgROI);
+    imwrite("../images/original.bmp", imgROI);
     namedWindow( "Region of Interrest", WINDOW_AUTOSIZE ); // Create a window for display
     imshow( "Region of Interrest", imgROI );
 
@@ -139,7 +137,7 @@ int main(int argc, char* argv[]) {
     threshold(contours, contoursInv, 128, 255, THRESH_BINARY_INV);
 
     // Display Canny image
-    imwrite("../contours.bmp", contoursInv);
+    imwrite("../images/contours.bmp", contoursInv);
 
     /*
      Hough tranform for line detection with feedback
@@ -183,11 +181,11 @@ int main(int argc, char* argv[]) {
         //    std::cout << " filter fail\n";
         //}
 
-        std::cout << "line: (" << rho << "," << theta << ")\n";
+        std::cout << "rho: " << rho << ", theta: " << theta << "\n";
         ++it;
     }
     // Display the detected line image
-    imwrite("../hough.bmp", result);
+    imwrite("../images/hough.bmp", result);
     namedWindow( "Hough", WINDOW_AUTOSIZE ); // Create a window for display
     imshow( "Hough", hough );
     // Create LineFinder instance
@@ -206,7 +204,7 @@ int main(int argc, char* argv[]) {
     
     std::cout << "First Hough" << "\n";
 
-    imwrite("../houghP.bmp", houghP);
+    imwrite("../images/houghP.bmp", houghP);
 
     // bitwise AND of the two hough images
     bitwise_and(houghP, hough, houghP);
@@ -214,7 +212,10 @@ int main(int argc, char* argv[]) {
 
     threshold(houghP, houghPinv, 150, 255, THRESH_BINARY_INV); // threshold and invert to black lines
 
-    imwrite("../houghPinv.bmp", houghPinv);
+    imwrite("../images/houghPinv.bmp", houghPinv);
+
+    Mat mm(imgROI.size(), CV_8U, Scalar(0));
+    imwrite("../images/houghPinv.bmp", mm);
 
     Canny(houghPinv, contours, 100, 350);
     li = ld.findLines(contours);
@@ -223,36 +224,42 @@ int main(int argc, char* argv[]) {
     imshow( "Hough contours", contours );
 
     // TODO: Check color within contour for match with lane
-    imwrite("../Countours2.bmp", contours);
+    imwrite("../images/Countours2.bmp", contours);
 
     //Mat result(imgROI.size(), CV_8U, Scalar(255));
 
     // Set probabilistic Hough parameters
     ld.setLineLengthAndGap(5, 2);
     ld.setMinVote(1);
-    ld.setShift(sImage.cols / 3);
+    ld.setShift(.7*sImage.rows);
     ld.drawDetectedLines(sImage);
 
-    int i;
-    for (i = 0; i < ld.numberLines(); i++) {
-        ld.drawSelectedLine(sImage, i);
-        namedWindow( "Prob Hough", WINDOW_AUTOSIZE ); // Create a window for display
+    namedWindow( "Prob Hough", WINDOW_AUTOSIZE ); // Create a window for display
+    imwrite("../images/processed.bmp", sImage);
+    
+    int selected = 0, prev = 0;
+    while(selected < ld.numberLines()) {
+    
+        ld.drawSelectedLine(sImage, selected, prev);
+        
         imshow( "Prob Hough", sImage );
         int key = waitKey(0);
         //Act upon key press SPACE/ENTER
-        /**if (key == KEY_ENTER) {
-            printf("ENTER is pressed!\n");
+        if (selected > 0 && key == KEY_ENTER) {
+            prev = selected--;
+            continue;
         } else if (key == KEY_SPACE) {
-            printf("SPACE is pressed.\n");
+            prev=selected++;
+            continue; 
+        } else if (key == KEY_ENTER) {
+            continue;
         }
-        */
+        break;
     }
 
     std::stringstream stream;
     stream << "Lines Segments: " << lines.size();
-
-    imwrite("../processed.bmp", image);
-    
-    //cam.release();
+    }
+    cam.release();
     return 0;
 }

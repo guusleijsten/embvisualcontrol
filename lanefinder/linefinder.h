@@ -100,22 +100,21 @@ class LineFinder {
 	  	return lines.size();
 	  }
 
-	  void drawSelectedLine(cv::Mat &image, int index) {
+	  void drawSelectedLine(cv::Mat &image, int sel, int prev) {
 	  	  //Recolor previously selected line
-	  	  if (index > 0) {
-	  	  	  cv::Vec4i prev_line = lines.at(index - 1);
+  	  	  cv::Vec4i prev_line = lines.at(prev);
 
-		  	  cv::Point pt1(prev_line[0],prev_line[1]+shift);        
-			  cv::Point pt2(prev_line[2],prev_line[3]+shift);
+	  	  cv::Point pt1_prev(prev_line[0],prev_line[1]+shift);        
+		  cv::Point pt2_prev(prev_line[2],prev_line[3]+shift);
 
-			  cv::line( image, pt1, pt2, color, 6 );
-	  	  }
+		  cv::line( image, pt1_prev, pt2_prev, color, 6 );
 
 	  	  //Recolour selected line.
-	  	  cv::Vec4i line = lines.at(index);
+	  	  cv::Vec4i line = lines.at(sel);
 
-	  	  cv::Point pt1(line[0],line[1]+shift);        
+	  	  cv::Point pt1(line[0],line[1]+shift);
 		  cv::Point pt2(line[2],line[3]+shift);
+		  std::cout << " line: (" << pt1 << "," << pt2 << ")\n";
 
 		  cv::line( image, pt1, pt2, selected, 6 );
 	  }
@@ -193,3 +192,4 @@ class LineFinder {
 
 
 #endif
+
