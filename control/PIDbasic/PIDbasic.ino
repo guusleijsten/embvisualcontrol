@@ -20,7 +20,8 @@
 
 //PID variables
 //Define Variables we'll be connecting to
-double Setpoint, Input, Output;
+double Setpoint, rightInput, rightOutput;
+double            leftInput, leftOutput;
 
 //Variables for calculating step duration
 unsigned long prevL = 0, prevR = 0;
@@ -31,11 +32,12 @@ unsigned long nL = 0, nR = 0;
 float AvgL = 0, PavgL, AvgR = 0, PavgR;
 
 //Variables for setting motor speed!
-double MotorL = 0.0;
+double MotorL = 255.0;
 double MotorR = 200.0;
 
 //Specify the links and initial tuning parameters
-PID mRightPID(&Input, &Output, &Setpoint,2,5,1, DIRECT);
+PID mRightPID(&rightInput, &rightOutput, &Setpoint,2,5,1, DIRECT);
+//PID  mLeftPID( &leftInput,  &leftOutput, &Setpoint,2,5,1, DIRECT);
 
 // the setup function runs once when you press reset or power the board
 void setup() {
@@ -67,7 +69,9 @@ void setup() {
   Setpoint = 7;//Fullspeed = 6
   mRightPID.SetControllerDirection(DIRECT);
   //Turn the PID on.
+  //mLeftPID.SetMode(AUTOMATIC);
   mRightPID.SetMode(AUTOMATIC);
+  
 }
 
 void setMotor(const unsigned char cucPWM, const unsigned char cucFWD, const unsigned char cucBWD, const int ciSpeed)
@@ -142,8 +146,12 @@ void loop() {
     AvgL = getAvg(PavgL, stepTimeL, nL++);
   }
   if (nL % 10 == 1) {
-    Serial.print("Left  ");
-    Serial.println(AvgL);
+    leftInput = AvgL;
+//    Serial.print("in ");
+//    Serial.println(AvgL);
+//    mLeftPID.Compute();
+//    Serial.print("Left  ");
+//    Serial.println(AvgL);
   }
   
   setMotor(PWM_L, EN_L_BWD, EN_L_BWD, (int) MotorL);
@@ -154,15 +162,15 @@ void loop() {
     AvgR = getAvg(PavgR, stepTimeR, nR++);
   }
   if (nR % 10 == 1) {
-    Input = AvgR;
+    rightInput = AvgR;
     Serial.print("in ");
     Serial.println(AvgR);
     mRightPID.Compute();
     Serial.print("Right ");
-    Serial.println(Output);
+    Serial.println(rightOutput);
   }
 
-  setMotor(PWM_R, EN_R_FWD, EN_R_BWD, (int) MotorR - Output);
+  setMotor(PWM_R, EN_R_FWD, EN_R_BWD, (int) MotorR - rightOutput);
 	//delay(200);
 	
 }
