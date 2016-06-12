@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 2.8)
+project( blue )
+find_package( OpenCV )
+include_directories( ${OpenCV_INCLUDE_DIRS} )
+add_executable( blue blue.cpp )
+target_link_libraries( blue ${OpenCV_LIBS} )
