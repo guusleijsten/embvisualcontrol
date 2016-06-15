@@ -63,10 +63,6 @@ using namespace std;
 
 static string WINDOW_NAME = "Lane Detection step-by-step";
 
-/// Function headers
-int display_caption( const string caption );
-int display_dst( int delay );
-
 int main(int argc, char* argv[]) {
 
     init();
@@ -82,6 +78,10 @@ int main(int argc, char* argv[]) {
     std::vector<Vec2f> lines = process(roi);
     Mat hough(roi.size(), CV_8U, Scalar(0));
     std::vector<Vec2f>::const_iterator it = lines.begin();
+    
+    Vec2f minLine, maxLine;
+    minLine[1] = 10;
+    maxLine[1] = 0;
 
     //Cluster hough lines on Row
     
@@ -90,10 +90,17 @@ int main(int argc, char* argv[]) {
         float rho = (*it)[0]; // first element is distance rho
         float theta = (*it)[1]; // second element is angle theta
         
-        //TODO: modify code here!
+        //TODO: Get line minimum/maximimum theta, take difference in thetas, subtract from max. Same for rho. This gives reference line.
         if (((theta*180)/PI) > 105 || rho > 0)
         //if (rho > -100 && rho < 0)
         {
+            if (minLine[1] > theta) {
+                minLine = *it;
+            }
+            
+            if (maxLine[1] < theta) {
+                maxLine = *it;
+            }
             // point of intersection of the line with first row
             Point pt1(rho / cos(theta), 0);
             // point of intersection of the line with last row
@@ -107,6 +114,25 @@ int main(int argc, char* argv[]) {
         }
         ++it;
     }
+    if (maxLine[1] < .5*PI) {
+        std::cout << "No RIGHT lane" << "\n";
+    }
+    if (minLine[1] > .5*PI) {
+        std::cout << "No LEFT lane " << "\n";
+    }
+
+    //Point of intersection of the line with first row
+    float x_mid = (maxLine[0] / cos(maxLine[1])) + (minLine[0] / cos(minLine[1]));
+    
+    std::cout << "vanish point " << x_mid/2 << "\n";
+    Point pt1(x_mid/2, 0);
+    
+    //Point of intersection of the line with last row
+    Point pt2(src.cols/2, src.rows);
+    line(hough, pt1, pt2, Scalar(255), 5);
+    
+    //std::cout << "Max theta " << ((maxLine[1]*180)/PI) << "\n";
+    //std::cout << "Min theta " << ((minLine[1]*180)/PI) << "\n";
     // Display the detected line image
     showImg(hough);
 
