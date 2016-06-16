@@ -22,6 +22,9 @@
 #define NUMREADINGS     10                      // samples for Amp average
 
 int readings[NUMREADINGS];
+int flag2;
+int count;
+float Kc = 0.2;
 unsigned long lastMilli = 0;                    // loop timing 
 unsigned long lastMilliPrint = 0;               // loop timing
 int speed_req = 130;                            // speed (Set Point)
@@ -75,7 +78,8 @@ void loop() {
   if((millis()-lastMilli) >= LOOPTIME)   {                                    // enter tmed loop
     lastMilli = millis();
     getMotorData1();    
-    getMotorData2();                                                          // calculate speed, volts and Amps
+    getMotorData2();  
+    count = compensate();                                                         // calculate speed, volts and Amps
     PWM_val1= updatePid1(PWM_val1, speed_req, speed_act1);                        // compute PWM value
     analogWrite(PWM1, PWM_val1);                                                // send PWM to motor
     PWM_val2= updatePid2(PWM_val2, speed_req, speed_act2);                        // compute PWM value
@@ -107,7 +111,12 @@ float pidTerm = 0;                                                            //
 int error=0;                                  
 static int last_error=0;                             
   error = abs(targetValue) - abs(currentValue); 
-  pidTerm = (Kp1 * error) + (Kd1 * (error - last_error));                            
+   pidTerm = (Kp1 * error) + (Kd1 * (error - last_error));
+  if ( !flag2 )
+  {
+     pidTerm = pidTerm - Kc * count;  
+  }
+                               
   last_error = error;
   return constrain(command + int(pidTerm), 0, 255);
   //return int(pidTerm);
@@ -118,7 +127,11 @@ float pidTerm = 0;                                                            //
 int error=0;                                  
 static int last_error=0;                             
   error = abs(targetValue) - abs(currentValue); 
-  pidTerm = (Kp2 * error) + (Kd2 * (error - last_error));                            
+  pidTerm = (Kp2 * error) + (Kd2 * (error - last_error));  
+   if ( flag2 )
+  {
+     pidTerm = pidTerm - Kc * count;  
+  }                          
   last_error = error;
   return constrain(command + int(pidTerm), 0, 255);
   //return int(pidTerm);
@@ -127,7 +140,7 @@ static int last_error=0;
 void printMotorInfo()  {                                                      // display data
   if((millis()-lastMilliPrint) >= 500)   {                     
     lastMilliPrint = millis();
-    Serial.print("SP:");            Serial.println(speed_req);
+    Serial.print("SP:");            Serial.println(speed_req); Serial.print("flag2:");       Serial.print(flag2); 
     Serial.print("RPM1:");          Serial.print(speed_act1); Serial.print("          "); Serial.print("RPM2:");          Serial.println(speed_act2);
     Serial.print("PWM1:");          Serial.print(PWM_val1);   Serial.print("          "); Serial.print("PWM2:");          Serial.println(PWM_val2);  
     Serial.print("count1:");        Serial.print(count1);     Serial.print("          "); Serial.print("count2:");        Serial.println(count2); 
@@ -208,5 +221,13 @@ static int total=0;
   return total/count;
 }
 
-
+int compensate()
+{
+  int count;
+  if ( count2 > count1 ) 
+    flag2 = 1;
+  else if ( count2 < count1 )
+    flag2 = 0;
+  return abs (count2 - count1);
+}
 
