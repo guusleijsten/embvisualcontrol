@@ -41,9 +41,10 @@
 #include <opencv2/objdetect/objdetect.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <stdio.h>
-#include "string"
+#include "String"
 #include <iostream>
 #include "lanedetection.h"
+#include <sstream>
 
 #define PI 3.1415926
 #define DELAY 4000
@@ -56,15 +57,18 @@
 /// Global Variables
 int KERNEL_LENGTH = 15;
 
-int houghVote = 200;
-
 using namespace cv;
 using namespace std;
 
+int houghVote = 200;
+
 static string WINDOW_NAME = "Lane Detection step-by-step";
+static string WINDOW_NAME_BLUR = "blur";
+static string WINDOW_NAME_CANNY = "canny";
+static string WINDOW_NAME_HOUGH = "HOIUGH";
 
-int getResponse(Mat image) {
-
+int getResponse(cv::Mat image) {
+    houghVote = 200;
     init();
 
     cv::Mat src = preprocess(image);
@@ -72,6 +76,8 @@ int getResponse(Mat image) {
 	//showImg(src);
 
     cv::Mat roi = clip(src);
+    imshow( WINDOW_NAME, roi );
+    waitKey(10);
 
     std::vector<Vec2f> lines = process(roi);
     Mat hough(roi.size(), CV_8U, Scalar(0));
@@ -80,7 +86,7 @@ int getResponse(Mat image) {
     Vec2f minLine, maxLine;
     minLine[1] = 10;
     maxLine[1] = 0;
-
+    
     //Cluster hough lines on Row
     
     while (it != lines.end()) {
@@ -103,38 +109,41 @@ int getResponse(Mat image) {
             // draw a white line
             line(hough, pt1, pt2, Scalar(255));
 
-            std::cout << "rho: " << rho << ", theta: " << ((theta*180)/PI) << "\n";
+            //std::cout << "rho: " << rho << ", theta: " << theta << "\n";
             //std::cout << " (" << pt1.x << ", " << pt1.y << ")->(" << pt2.x << "," << pt2.y << ")\n";
             //std::cout << " (" << pt1 << ", " << pt2 << ")\n";
         }
         ++it;
     }
-    bool ret = true;
-    if (maxLine[1] < .5*PI) {
+    bool stable = true;
+    if (maxLine[1] < .55*PI) {
         std::cout << "No RIGHT lane\n";
-        ret = false;
+        stable = false;
     }
-    if (minLine[1] > .5*PI) {
+    if (minLine[1] > .45*PI) {
         std::cout << "No LEFT lane\n";
-        ret = false;
+        stable = false;
     }
 
     //Point of intersection of the line with first row
-    float x_mid = (maxLine[0] / cos(maxLine[1])) + (minLine[0] / cos(minLine[1]));
+    if (stable) {
+        float x_mid = (maxLine[0] / cos(maxLine[1])) + (minLine[0] / cos(minLine[1]));
     
-    std::cout << "vanish point " << x_mid/2 << "\n";
-    Point pt1(x_mid/2, 0);
-    
-    //Point of intersection of the line with last row
-    Point pt2(src.cols/2, src.rows);
-    line(hough, pt1, pt2, Scalar(255), 5);
-    
-    //std::cout << "Max theta " << ((maxLine[1]*180)/PI) << "\n";
-    //std::cout << "Min theta " << ((minLine[1]*180)/PI) << "\n";
-    // Display the detected line image
-    showImg(hough);
+        std::cout << "vanish point " << x_mid/2 << "\n";
+        Point pt1(x_mid/2, 0);
+        
+        //Point of intersection of the line with last row
+        Point pt2(src.cols/2, src.rows);
+        line(hough, pt1, pt2, Scalar(255), 5);
+        
+        //std::cout << "Max theta " << ((maxLine[1]*180)/PI) << "\n";
+        //std::cout << "Min theta " << ((minLine[1]*180)/PI) << "\n";
+        // Display the detected line image
+    }
+    imshow( WINDOW_NAME_HOUGH, hough );
+    waitKey(10);
 
-    return ret;
+    return stable;
 }
 
 cv::Mat preprocess(cv::Mat src)
@@ -164,9 +173,13 @@ std::vector<Vec2f> process(cv::Mat src)
     //GaussianBlur( mod, blr, Size( BLUR_PAR, BLUR_PAR ), 0, 0 );
     medianBlur(src, blr, BLUR_PAR);
     //showImg(blr);
+    imshow( WINDOW_NAME_BLUR, blr );
+    waitKey(10);
 
     Mat contours;
     Canny(blr, contours, 50, 250);
+    imshow( WINDOW_NAME_CANNY, contours );
+    waitKey(10);
 
     //showImg(contours);
     
@@ -174,10 +187,12 @@ std::vector<Vec2f> process(cv::Mat src)
     threshold(contours, contoursInv, 128, 255, THRESH_BINARY_INV);
     
     std::vector<Vec2f> lines;
+    while (lines.size() < MIN_HOUGH_LINES && houghVote > 0)
+    {
 
-    while (lines.size() < MIN_HOUGH_LINES && houghVote > 0) {
-        HoughLines(contours, lines, 1, PI / 180, houghVote);
+        HoughLines(contours, lines, 10, PI / 180, houghVote);
         houghVote -= 25;
+
     }
     //HoughLines(contours, lines, 1, PI / 180, HOUGH_VOTE);
 
@@ -187,10 +202,13 @@ std::vector<Vec2f> process(cv::Mat src)
 void init(void)
 {
     namedWindow( WINDOW_NAME, CV_WINDOW_AUTOSIZE );
+    namedWindow( WINDOW_NAME_BLUR, CV_WINDOW_AUTOSIZE );
+    namedWindow( WINDOW_NAME_CANNY, CV_WINDOW_AUTOSIZE );
+    namedWindow( WINDOW_NAME_HOUGH, CV_WINDOW_AUTOSIZE );
 }
 
 void showImg(cv::Mat img)
 {
     imshow( WINDOW_NAME, img );
-    waitKey(0);
+    waitKey(100);
 }

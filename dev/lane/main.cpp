@@ -41,17 +41,29 @@
 #include <opencv2/objdetect/objdetect.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <stdio.h>
-#include "string"
+#include "String"
 #include <iostream>
+ #include <sstream>
 #include "lanedetection.h"
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
 
-    init();
+    //init();
+    using namespace cv;
 
-    cv::Mat image = cv::imread(argv[1]);
+  cv::Mat image ;
 
-    std::cout << getResponse(image) << "!";
+	cv::VideoCapture capture;
+	//open capture object at location zero (default location for webcam)
+	capture.open("video_new.h264");
+int i = 0;
+    while(1){
 
+	   capture.read(image);
+
+        // cv::Mat image = cv::imread(argv[1]);
+        if (i % 5 == 0)
+            std::cout << getResponse(image) << "!";}
+        i++;
     return 0;
 }

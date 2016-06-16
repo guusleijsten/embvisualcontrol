@@ -4,9 +4,10 @@
 #include "opencv2/highgui/highgui.hpp"
 #include <opencv2/objdetect/objdetect.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include "string"
+#include "String"
 #include <stdio.h>
 #include <iostream>
+ #include <sstream>
 
 struct Line
 {
