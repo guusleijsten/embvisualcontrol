@@ -17,6 +17,8 @@ struct Line
 void init(void);
 void showImg(cv::Mat img);
 
+int getResponse(cv::Mat img);
+
 cv::Mat clip(cv::Mat src);
 cv::Mat preprocess(cv::Mat src);
 std::vector<cv::Vec2f> process(cv::Mat src);
